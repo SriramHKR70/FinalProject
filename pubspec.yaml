@@ -30,7 +30,18 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  collection: ^1.18.0
+  flutter_lints: ^4.0.0
+  leak_tracker: ^10.0.4
+  leak_tracker_flutter_testing: ^3.0.3
+  lints: ^4.0.0
+  material_color_utilities: ^0.8.0
+  meta: ^1.12.0
+  string_scanner: ^1.2.0
+  sqflite: ^2.0.0+4
 
+
+  web: ^1.0.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -40,12 +51,13 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^3.0.0
+  flutter_lints: ^4.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
