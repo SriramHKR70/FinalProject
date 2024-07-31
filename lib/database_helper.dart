@@ -39,10 +39,20 @@ class DatabaseHelper {
       )
       ''',
     );
+    await db.execute(
+      '''
+      CREATE TABLE reservations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        flight_id INTEGER,
+        seat_number TEXT,
+        FOREIGN KEY (flight_id) REFERENCES flights (id)
+      )
+      ''',
+    );
   }
 
-  // CRUD methods
-
+  // CRUD methods for Flights
   Future<int> insertFlight(Map<String, dynamic> flight) async {
     Database db = await database;
     return await db.insert('flights', flight);
@@ -62,5 +72,27 @@ class DatabaseHelper {
   Future<int> deleteFlight(int id) async {
     Database db = await database;
     return await db.delete('flights', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // CRUD methods for Reservations
+  Future<int> insertReservation(Map<String, dynamic> reservation) async {
+    Database db = await database;
+    return await db.insert('reservations', reservation);
+  }
+
+  Future<List<Map<String, dynamic>>> getReservations() async {
+    Database db = await database;
+    return await db.query('reservations');
+  }
+
+  Future<int> updateReservation(Map<String, dynamic> reservation) async {
+    Database db = await database;
+    int id = reservation['id'];
+    return await db.update('reservations', reservation, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> deleteReservation(int id) async {
+    Database db = await database;
+    return await db.delete('reservations', where: 'id = ?', whereArgs: [id]);
   }
 }

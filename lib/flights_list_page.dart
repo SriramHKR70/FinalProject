@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'database_helper.dart';
 import 'flight_form_page.dart';
+import 'reservation_page.dart';
 
 class FlightListPage extends StatefulWidget {
   @override
@@ -42,32 +43,43 @@ class _FlightListPageState extends State<FlightListPage> {
               itemCount: snapshot.data!.length,
               itemBuilder: (context, index) {
                 final flight = snapshot.data![index];
-                return ListTile(
-                  title: Text(flight['name']),
-                  subtitle: Text('${flight['source']} -> ${flight['destination']}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.edit),
-                        onPressed: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => FlightFormPage(flight: flight),
-                            ),
-                          );
-                          _loadFlights();
-                        },
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () async {
-                          await DatabaseHelper().deleteFlight(flight['id']);
-                          _loadFlights();
-                        },
-                      ),
-                    ],
+                return Card(
+                  margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                  child: ListTile(
+                    title: Text(flight['name']),
+                    subtitle: Text('${flight['source']} -> ${flight['destination']}'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.edit),
+                          onPressed: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => FlightFormPage(flight: flight),
+                              ),
+                            );
+                            _loadFlights();
+                          },
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () async {
+                            await DatabaseHelper().deleteFlight(flight['id']);
+                            _loadFlights();
+                          },
+                        ),
+                      ],
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ReservationPage(flightId: flight['id']),
+                        ),
+                      );
+                    },
                   ),
                 );
               },

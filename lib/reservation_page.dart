@@ -1,81 +1,90 @@
 import 'package:flutter/material.dart';
 import 'database_helper.dart';
-import 'reservation_form_page.dart';
 
 class ReservationPage extends StatefulWidget {
+  final int? flightId;
+  final Map<String, dynamic>? reservation;
+
+  ReservationPage({this.flightId, this.reservation});
+
   @override
   _ReservationPageState createState() => _ReservationPageState();
 }
 
 class _ReservationPageState extends State<ReservationPage> {
-  final dbHelper = DatabaseHelper();
-  List<Map<String, dynamic>> reservationsList = [];
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _nameController;
+  late TextEditingController _seatNumberController;
 
   @override
   void initState() {
     super.initState();
-    _fetchReservations();
+    _nameController = TextEditingController(text: widget.reservation?['name'] ?? '');
+    _seatNumberController = TextEditingController(text: widget.reservation?['seat_number'] ?? '');
   }
 
-  void _fetchReservations() async {
-    final allRows = await dbHelper.queryAllReservations();
-    setState(() {
-      reservationsList = allRows;
-    });
-  }
-
-  void _addReservation() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => ReservationFormPage()),
-    ).then((value) {
-      if (value != null) {
-        _fetchReservations();
-      }
-    });
-  }
-
-  void _updateReservation(Map<String, dynamic> reservation) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => ReservationFormPage(reservation: reservation)),
-    ).then((value) {
-      if (value != null) {
-        _fetchReservations();
-      }
-    });
-  }
-
-  void _deleteReservation(int id) async {
-    await dbHelper.deleteReservation(id);
-    _fetchReservations();
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _seatNumberController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Reservations'),
+        title: Text(widget.reservation == null ? 'Add Reservation' : 'Edit Reservation'),
       ),
-      body: ListView.builder(
-        itemCount: reservationsList.length,
-        itemBuilder: (context, index) {
-          final reservation = reservationsList[index];
-          return ListTile(
-            title: Text(reservation['name']),
-            subtitle: Text('Customer ID: ${reservation['customerId']}, Flight ID: ${reservation['flightId']}, Date: ${reservation['date']}'),
-            onTap: () => _updateReservation(reservation),
-            trailing: IconButton(
-              icon: Icon(Icons.delete),
-              onPressed: () => _deleteReservation(reservation['id']),
-            ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addReservation,
-        tooltip: 'Add Reservation',
-        child: Icon(Icons.add),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(labelText: 'Name'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a name';
+                  }
+                  return null;
+                },
+              ),
+              TextFormField(
+                controller: _seatNumberController,
+                decoration: InputDecoration(labelText: 'Seat Number'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter the seat number';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () async {
+                  if (_formKey.currentState!.validate()) {
+                    Map<String, dynamic> reservation = {
+                      'name': _nameController.text,
+                      'flight_id': widget.flightId,
+                      'seat_number': _seatNumberController.text,
+                    };
+                    if (widget.reservation == null) {
+                      await DatabaseHelper().insertReservation(reservation);
+                    } else {
+                      reservation['id'] = widget.reservation!['id'];
+                      await DatabaseHelper().updateReservation(reservation);
+                    }
+                    Navigator.pop(context);
+                  }
+                },
+                child: Text(widget.reservation == null ? 'Add Reservation' : 'Update Reservation'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
