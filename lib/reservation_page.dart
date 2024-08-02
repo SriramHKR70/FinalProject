@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'database_helper.dart';
+import 'package:intl/intl.dart';
 
 class ReservationPage extends StatefulWidget {
-  final int? flightId;
-  final Map<String, dynamic>? reservation;
+  final Function(Map<String, dynamic>) onReservationAdded;
 
-  ReservationPage({this.flightId, this.reservation});
+  ReservationPage({required this.onReservationAdded});
 
   @override
   _ReservationPageState createState() => _ReservationPageState();
@@ -13,76 +12,232 @@ class ReservationPage extends StatefulWidget {
 
 class _ReservationPageState extends State<ReservationPage> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _nameController;
-  late TextEditingController _seatNumberController;
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _customerNameController = TextEditingController();
+  final TextEditingController _flightController = TextEditingController();
+  final TextEditingController _departureCityController = TextEditingController();
+  final TextEditingController _destinationCityController = TextEditingController();
+  DateTime _departureTime = DateTime.now();
+  DateTime _arrivalTime = DateTime.now().add(Duration(hours: 2));
+  Locale _locale = Locale('en');
 
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.reservation?['name'] ?? '');
-    _seatNumberController = TextEditingController(text: widget.reservation?['seat_number'] ?? '');
+  void _changeLanguage() {
+    setState(() {
+      _locale = _locale.languageCode == 'en' ? Locale('fr') : Locale('en');
+    });
   }
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _seatNumberController.dispose();
-    super.dispose();
+  void _submitForm() {
+    if (_formKey.currentState!.validate()) {
+      final reservation = {
+        'title': _titleController.text,
+        'customerName': _customerNameController.text,
+        'flight': _flightController.text,
+        'departureCity': _departureCityController.text,
+        'destinationCity': _destinationCityController.text,
+        'departureTime': _departureTime.toIso8601String(),
+        'arrivalTime': _arrivalTime.toIso8601String(),
+      };
+
+      widget.onReservationAdded(reservation);
+      Navigator.pop(context);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.reservation == null ? 'Add Reservation' : 'Edit Reservation'),
+        title: Text(
+          _locale.languageCode == 'en' ? 'Add Reservation' : 'Ajouter Réservation',
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.language),
+            onPressed: _changeLanguage,
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(labelText: 'Name'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a name';
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _seatNumberController,
-                decoration: InputDecoration(labelText: 'Seat Number'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter the seat number';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState!.validate()) {
-                    Map<String, dynamic> reservation = {
-                      'name': _nameController.text,
-                      'flight_id': widget.flightId,
-                      'seat_number': _seatNumberController.text,
-                    };
-                    if (widget.reservation == null) {
-                      await DatabaseHelper().insertReservation(reservation);
-                    } else {
-                      reservation['id'] = widget.reservation!['id'];
-                      await DatabaseHelper().updateReservation(reservation);
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Image.asset(
+                    'images/11.png', // Add an airplane image in your assets folder
+                    height: 150,
+                  ),
+                ),
+                SizedBox(height: 16.0),
+                TextFormField(
+                  controller: _titleController,
+                  decoration: InputDecoration(
+                    labelText: _locale.languageCode == 'en' ? 'Title' : 'Titre',
+                    prefixIcon: Icon(Icons.title),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return _locale.languageCode == 'en'
+                          ? 'Please enter a title'
+                          : 'Veuillez entrer un titre';
                     }
-                    Navigator.pop(context);
-                  }
-                },
-                child: Text(widget.reservation == null ? 'Add Reservation' : 'Update Reservation'),
-              ),
-            ],
+                    return null;
+                  },
+                ),
+                SizedBox(height: 16.0),
+                TextFormField(
+                  controller: _customerNameController,
+                  decoration: InputDecoration(
+                    labelText: _locale.languageCode == 'en' ? 'Customer Name' : 'Nom du client',
+                    prefixIcon: Icon(Icons.person),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return _locale.languageCode == 'en'
+                          ? 'Please enter the customer name'
+                          : 'Veuillez entrer le nom du client';
+                    }
+                    return null;
+                  },
+                ),
+                SizedBox(height: 16.0),
+                TextFormField(
+                  controller: _flightController,
+                  decoration: InputDecoration(
+                    labelText: _locale.languageCode == 'en' ? 'Flight' : 'Vol',
+                    prefixIcon: Icon(Icons.flight_takeoff),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return _locale.languageCode == 'en'
+                          ? 'Please enter the flight'
+                          : 'Veuillez entrer le vol';
+                    }
+                    return null;
+                  },
+                ),
+                SizedBox(height: 16.0),
+                TextFormField(
+                  controller: _departureCityController,
+                  decoration: InputDecoration(
+                    labelText: _locale.languageCode == 'en' ? 'Departure City' : 'Ville de départ',
+                    prefixIcon: Icon(Icons.location_city),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return _locale.languageCode == 'en'
+                          ? 'Please enter the departure city'
+                          : 'Veuillez entrer la ville de départ';
+                    }
+                    return null;
+                  },
+                ),
+                SizedBox(height: 16.0),
+                TextFormField(
+                  controller: _destinationCityController,
+                  decoration: InputDecoration(
+                    labelText: _locale.languageCode == 'en' ? 'Destination City' : 'Ville de destination',
+                    prefixIcon: Icon(Icons.location_city),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return _locale.languageCode == 'en'
+                          ? 'Please enter the destination city'
+                          : 'Veuillez entrer la ville de destination';
+                    }
+                    return null;
+                  },
+                ),
+                SizedBox(height: 16.0),
+                Row(
+                  children: [
+                    Text(
+                      _locale.languageCode == 'en' ? 'Departure Time:' : 'Heure de départ:',
+                      style: TextStyle(fontSize: 16.0),
+                    ),
+                    Spacer(),
+                    TextButton(
+                      onPressed: () async {
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.fromDateTime(_departureTime),
+                        );
+                        if (time != null) {
+                          setState(() {
+                            _departureTime = DateTime(
+                              _departureTime.year,
+                              _departureTime.month,
+                              _departureTime.day,
+                              time.hour,
+                              time.minute,
+                            );
+                          });
+                        }
+                      },
+                      child: Text(
+                        DateFormat.jm().format(_departureTime),
+                        style: TextStyle(fontSize: 16.0),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16.0),
+                Row(
+                  children: [
+                    Text(
+                      _locale.languageCode == 'en' ? 'Arrival Time:' : 'Heure d\'arrivée:',
+                      style: TextStyle(fontSize: 16.0),
+                    ),
+                    Spacer(),
+                    TextButton(
+                      onPressed: () async {
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.fromDateTime(_arrivalTime),
+                        );
+                        if (time != null) {
+                          setState(() {
+                            _arrivalTime = DateTime(
+                              _arrivalTime.year,
+                              _arrivalTime.month,
+                              _arrivalTime.day,
+                              time.hour,
+                              time.minute,
+                            );
+                          });
+                        }
+                      },
+                      child: Text(
+                        DateFormat.jm().format(_arrivalTime),
+                        style: TextStyle(fontSize: 16.0),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16.0),
+                Center(
+                  child: ElevatedButton(
+                    onPressed: _submitForm,
+                    child: Text(
+                      _locale.languageCode == 'en' ? 'Submit' : 'Soumettre',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(horizontal: 32.0, vertical: 12.0),
+                      textStyle: TextStyle(fontSize: 18.0),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
