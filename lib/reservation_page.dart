@@ -1,16 +1,179 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'database_helper.dart';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Reservation App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      home: ReservationPage(),
+    );
+  }
+}
 
 class ReservationPage extends StatefulWidget {
-  final Function(Map<String, dynamic>) onReservationAdded;
-
-  ReservationPage({required this.onReservationAdded});
-
   @override
   _ReservationPageState createState() => _ReservationPageState();
 }
 
 class _ReservationPageState extends State<ReservationPage> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _customerNameController = TextEditingController();
+  final TextEditingController _flightController = TextEditingController();
+  final TextEditingController _departureCityController = TextEditingController();
+  final TextEditingController _destinationCityController = TextEditingController();
+  DateTime _departureTime = DateTime.now();
+  DateTime _arrivalTime = DateTime.now().add(Duration(hours: 2));
+  Locale _locale = Locale('en');
+  List<Map<String, dynamic>> reservations = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReservations();
+  }
+
+  void _loadReservations() async {
+    DatabaseHelper helper = DatabaseHelper();
+    List<Map<String, dynamic>> data = await helper.getReservations();
+    setState(() {
+      reservations = data;
+    });
+  }
+
+  void _addReservation(Map<String, dynamic> reservation) async {
+    DatabaseHelper helper = DatabaseHelper();
+    await helper.insertReservation(reservation);
+    _loadReservations();
+  }
+
+  void _changeLanguage() {
+    setState(() {
+      _locale = _locale.languageCode == 'en' ? Locale('fr') : Locale('en');
+    });
+  }
+
+  void _submitForm() {
+    if (_formKey.currentState!.validate()) {
+      final reservation = {
+        'title': _titleController.text,
+        'customerName': _customerNameController.text,
+        'flight': _flightController.text,
+        'departureCity': _departureCityController.text,
+        'destinationCity': _destinationCityController.text,
+        'departureTime': _departureTime.toIso8601String(),
+        'arrivalTime': _arrivalTime.toIso8601String(),
+      };
+
+      _addReservation(reservation);
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_locale.languageCode == 'en' ? 'Reservations' : 'Réservations'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.language),
+            onPressed: _changeLanguage,
+          ),
+        ],
+      ),
+      body: reservations.isEmpty
+          ? Center(child: Text(_locale.languageCode == 'en' ? 'No Reservations' : 'Aucune réservation'))
+          : ListView.builder(
+        itemCount: reservations.length,
+        itemBuilder: (context, index) {
+          final reservation = reservations[index];
+          return Card(
+            child: ListTile(
+              leading: Icon(Icons.flight),
+              title: Text(reservation['title']),
+              subtitle: Text('${reservation['customerName']} - ${reservation['flight']}'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ReservationDetailPage(reservation: reservation),
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddReservationPage(onReservationAdded: _addReservation),
+            ),
+          );
+        },
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class ReservationDetailPage extends StatelessWidget {
+  final Map<String, dynamic> reservation;
+
+  ReservationDetailPage({required this.reservation});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(reservation['title']),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Customer Name: ${reservation['customerName']}'),
+            SizedBox(height: 8.0),
+            Text('Flight: ${reservation['flight']}'),
+            SizedBox(height: 8.0),
+            Text('Departure: ${reservation['departureCity']}'),
+            SizedBox(height: 8.0),
+            Text('Destination: ${reservation['destinationCity']}'),
+            SizedBox(height: 8.0),
+            Text('Departure Time: ${DateFormat.jm().format(DateTime.parse(reservation['departureTime']))}'),
+            SizedBox(height: 8.0),
+            Text('Arrival Time: ${DateFormat.jm().format(DateTime.parse(reservation['arrivalTime']))}'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AddReservationPage extends StatefulWidget {
+  final Function(Map<String, dynamic>) onReservationAdded;
+
+  AddReservationPage({required this.onReservationAdded});
+
+  @override
+  _AddReservationPageState createState() => _AddReservationPageState();
+}
+
+class _AddReservationPageState extends State<AddReservationPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _customerNameController = TextEditingController();
@@ -68,7 +231,7 @@ class _ReservationPageState extends State<ReservationPage> {
               children: [
                 Center(
                   child: Image.asset(
-                    'images/11.png', // Add an airplane image in your assets folder
+                    'images/11.png',
                     height: 150,
                   ),
                 ),
